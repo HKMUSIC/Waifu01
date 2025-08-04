@@ -28,15 +28,12 @@ async def harem_handler(client, message):
     page = 0
     user = await user_collection.find_one({"id": user_id})
     filter_rarity = user.get('filter_rarity', None) if user else None
-    await display_harem(client, message, user_id, page, filter_rarity, is_initial=True)
-
-# Ab reply se msg banao delete karne ke liye
-msg = await message.reply("🕒 This message will auto-delete in 3 minutes.")
-
-# Delete after 3 minutes
-await asyncio.sleep(180)
-if msg:
+    msg = await display_harem(client, message, user_id, page, filter_rarity, is_initial=True)
+    
+    # Delete the message after 3 minutes (180 seconds)
+    await asyncio.sleep(180)
     await msg.delete()
+
 async def display_harem(client, message, user_id, page, filter_rarity, is_initial=False, callback_query=None):
     try:
         characters, error = await fetch_user_characters(user_id)
@@ -239,6 +236,3 @@ async def set_rarity_callback(client, callback_query):
         await callback_query.answer(f"Rarity filter set to {filter_rarity if filter_rarity else 'All'}", show_alert=True)
     except Exception as e:
         print(f"Error in set_rarity callback: {e}")
-
-
-
