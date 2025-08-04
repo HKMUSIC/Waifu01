@@ -28,10 +28,12 @@ async def harem_handler(client, message):
     page = 0
     user = await user_collection.find_one({"id": user_id})
     filter_rarity = user.get('filter_rarity', None) if user else None
-    msg = await display_harem(client, message, user_id, page, filter_rarity, is_initial=True)
-    
-    # Delete the message after 3 minutes (180 seconds)
-    msg = await message.reply("🕒 This message will auto-delete in 3 minutes.")
+    await display_harem(client, message, user_id, page, filter_rarity, is_initial=True)
+
+# Ab reply se msg banao delete karne ke liye
+msg = await message.reply("🕒 This message will auto-delete in 3 minutes.")
+
+# Delete after 3 minutes
 await asyncio.sleep(180)
 if msg:
     await msg.delete()
