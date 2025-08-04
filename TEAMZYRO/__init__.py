@@ -29,7 +29,7 @@ api_id = os.getenv("API_ID", "23343216")
 api_hash = os.getenv("API_HASH", "1d66f21cd828dc22b80e3750719bd94a")
 TOKEN = os.getenv("TOKEN", "")
 GLOG = os.getenv("GLOG", "gojo_waifu")
-CHARA_CHANNEL_ID = os.getenv("CHARA_CHANNEL_ID", "lTeam_ll_MAFIA")
+CHARA_CHANNEL_ID = os.getenv("CHARA_CHANNEL_ID", "Team_ll_MAFIA")
 SUPPORT_CHAT_ID = os.getenv("SUPPORT_CHAT_ID", "-1002148549926")
 mongo_url = os.getenv("MONGO_URL", "mongodb+srv://Gojowaifu2:Gojowaifu2@cluster0.uvox90s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
@@ -46,7 +46,7 @@ PHOTO_URL = [
 STATS_IMG = ["https://files.catbox.moe/0zvwpt.jpg"]
 
 SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "https://t.me/+KmMKQphxhjE2MmVl")
-UPDATE_CHAT = os.getenv("UPDATE_CHAT", "https://t.me/II_mafia_support_I")
+UPDATE_CHAT = os.getenv("UPDATE_CHAT", "https://t.me/Team_ll_MAFIA")
 SUDO = list(map(int, os.getenv("SUDO", "7553434931").split(',')))
 OWNER_ID = int(os.getenv("OWNER_ID", "6667379671"))
 
