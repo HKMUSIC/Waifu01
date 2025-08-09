@@ -53,7 +53,7 @@ async def generate_group_start_message(client):
     buttons = [
         [
             InlineKeyboardButton("◦ᴀᴅᴅ ᴍᴇ◦", url=f"https://t.me/{bot_user.username}?startgroup=true"),
-            InlineKeyboardButton("◦sᴜᴘᴘᴏʀᴛ◦", url="https://t.me/GOJO_NOBITA_II"),
+            InlineKeyboardButton("◦sᴜᴘᴘᴏʀᴛ◦", url="https://t.me/+J1uhYeGU0rFhMWZl"),
         ]
     ]
     return caption, buttons
@@ -168,6 +168,7 @@ async def back_to_home(client, query: CallbackQuery):
         caption,
         reply_markup=InlineKeyboardMarkup(buttons)  # Pass InlineKeyboardMarkup directly
         )
+
 
 
 
