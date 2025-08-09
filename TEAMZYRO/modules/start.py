@@ -38,7 +38,7 @@ async def generate_start_message(client, message):
 
     buttons = [
         [InlineKeyboardButton("⋆ᴀᴅᴅ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ⋆", url=f"https://t.me/{bot_user.username}?startgroup=true")],
-        [InlineKeyboardButton("❍sᴜᴘᴘᴏʀᴛ❍", url="https://t.me/+WMCuW_2lLxM2ZDZl"), 
+        [InlineKeyboardButton("❍sᴜᴘᴘᴏʀᴛ❍", url="https://t.me/+J1uhYeGU0rFhMWZl"), 
          InlineKeyboardButton("❍ᴄʜᴀɴɴᴇʟ❍", url="https://t.me/II_mafia_support_I")],
         [InlineKeyboardButton("⋆ʜᴇʟᴘ⋆", callback_data="open_help")],
         [InlineKeyboardButton("✦ʟᴏʀᴅ✦", url="http://t.me/ll_MAFIA_l")]
@@ -168,5 +168,6 @@ async def back_to_home(client, query: CallbackQuery):
         caption,
         reply_markup=InlineKeyboardMarkup(buttons)  # Pass InlineKeyboardMarkup directly
         )
+
 
 
