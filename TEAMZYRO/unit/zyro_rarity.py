@@ -36,7 +36,7 @@ RARITY_NAMES = {
     15: "✨ Neon",
     16: "⚜Royal",
     17: "🎨Holi edition"
-]
+{
 
 rarity_map2 = {
     1: "⚪️ Common","⚪️",
