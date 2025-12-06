@@ -1,122 +1,198 @@
-from pyrogram import Client, filters, enums  
+from TEAMZYRO import app   # <<< REQUIRED
+from pyrogram import filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-import random
-import asyncio
 import html
-from TEAMZYRO import app as Client
+import random
+
 from TEAMZYRO import user_collection, top_global_groups_collection
 
-PHOTO_URL = ["https://files.catbox.moe/9j8e6b.jpg"]  
+PHOTO_URL = ["https://files.catbox.moe/9j8e6b.jpg"]
 
-@Client.on_message(filters.command("rank"))
-async def rank(client, message):
+
+# ---------- Badges ----------
+def get_badge(rank: int, total: int):
+    if total <= 0:
+        return "", ""
+    if rank == 1:
+        return "🥇", "Champion"
+    if rank == 2:
+        return "🥈", "2nd Place"
+    if rank == 3:
+        return "🥉", "3rd Place"
+    if rank <= 10:
+        return "🏅", f"Top {rank}"
+
+    pct = rank / total
+    if pct <= 0.01:
+        return "💎", "Top 1%"
+    if pct <= 0.05:
+        return "🔷", "Top 5%"
+    if pct <= 0.10:
+        return "🔹", "Top 10%"
+    return "", ""
+
+
+# ---------- Build captions ----------
+def build_user_leaderboard(data):
+    total = len(data)
+    caption = "<b>🏆 TOP 10 USERS (CHARACTERS)</b>\n\n"
+    for i, user in enumerate(data, start=1):
+        uid = user.get("id")
+        name = html.escape(user.get("first_name", "Unknown"))
+        if len(name) > 15:
+            name = name[:15] + "..."
+        count = len(user.get("characters", []))
+        badge, _ = get_badge(i, total)
+        caption += f"{i}. {badge} <a href='tg://user?id={uid}'><b>{name}</b></a> ➜ <b>{count}</b>\n"
+    return caption
+
+
+def build_group_leaderboard(data):
+    caption = "<b>🏆 TOP 10 GROUPS</b>\n\n"
+    for i, group in enumerate(data, start=1):
+        name = html.escape(group.get("group_name", "Unknown"))
+        if len(name) > 15:
+            name = name[:15] + "..."
+        count = group.get("count", 0)
+        badge, _ = get_badge(i, len(data))
+        caption += f"{i}. {badge} <b>{name}</b> ➜ <b>{count}</b>\n"
+    return caption
+
+
+def build_coin_leaderboard(data):
+    caption = "<b>🏆 TOP 10 RICHEST USERS</b>\n\n"
+    total = len(data)
+    for i, user in enumerate(data, start=1):
+        uid = user.get("id")
+        name = html.escape(user.get("first_name", "Unknown"))
+        if len(name) > 15:
+            name = name[:15] + "..."
+        coins = user.get("balance", 0)
+        badge, _ = get_badge(i, total)
+        caption += f"{i}. {badge} <a href='tg://user?id={uid}'><b>{name}</b></a> ➜ <b>{coins}</b>\n"
+    return caption
+
+
+# ---------- Buttons ----------
+def get_buttons(active):
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("👤 Users" if active == "top" else "Users", callback_data="top"),
+            InlineKeyboardButton("👥 Groups" if active == "top_group" else "Groups", callback_data="top_group"),
+        ],
+        [
+            InlineKeyboardButton("💰 Richest" if active == "mtop" else "Richest", callback_data="mtop")
+        ]
+    ])
+
+
+# ---------- /rank ----------
+@app.on_message(filters.command("rank"))
+async def rank_cmd(client, message):
     cursor = user_collection.find({}, {"_id": 0, "id": 1, "first_name": 1, "characters": 1})
-    leaderboard_data = await cursor.to_list(length=None)
-    leaderboard_data.sort(key=lambda x: len(x.get('characters', [])), reverse=True)
-    leaderboard_data = leaderboard_data[:10]
+    data = await cursor.to_list(length=None)
+    data.sort(key=lambda x: len(x.get("characters", [])), reverse=True)
+    top_users = data[:10]
 
-    leaderboard_message = "<b>ᴛᴏᴘ 10 ᴜsᴇʀs ᴡɪᴛʜ ᴍᴏsᴛ ᴄʜᴀʀᴀᴄᴛᴇʀs</b>\n\n"
-    for i, user in enumerate(leaderboard_data, start=1):
-        user_id = user.get('id', 'Unknown')
-        first_name = html.escape(user.get('first_name', 'Unknown'))[:15] + '...'
-        character_count = len(user.get('characters', []))
-        leaderboard_message += f'{i}. <a href="tg://user?id={user_id}"><b>{first_name}</b></a> ➾ <b>{character_count}</b>\n'
-
-    buttons = [
-        [
-            InlineKeyboardButton("ᴛᴏᴘ🥀", callback_data="top"),
-            InlineKeyboardButton("ᴛᴏᴘ ɢʀᴏᴜᴘ🥀", callback_data="top_group"),
-        ],
-        [
-            InlineKeyboardButton("ᴍᴛᴏᴘ🥀", callback_data="mtop"),
-            InlineKeyboardButton("ᴛᴏᴋᴇɴs🥀", callback_data="tokens"),
-        ],
-    ]
+    caption = build_user_leaderboard(top_users)
 
     await message.reply_photo(
         photo=random.choice(PHOTO_URL),
-        caption=leaderboard_message,
-        parse_mode=enums.ParseMode.HTML,
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
-
-async def update_caption(callback_query, caption, active_button):
-    buttons = [
-        [
-            InlineKeyboardButton("ᴛᴏᴘ🥀" if active_button == "top" else "Top", callback_data="top"),
-            InlineKeyboardButton("ᴛᴏᴘ ɢʀᴏᴜᴘ🥀" if active_button == "top_group" else "Top Group", callback_data="top_group"),
-        ],
-        [
-            InlineKeyboardButton("ᴍᴛᴏᴘ🥀" if active_button == "mtop" else "MTOP", callback_data="mtop"),
-            InlineKeyboardButton("ᴛᴏᴋᴇɴs🥀" if active_button == "tokens" else "Tokens", callback_data="tokens"),
-        ],
-    ]
-
-    await callback_query.edit_message_caption(
         caption=caption,
         parse_mode=enums.ParseMode.HTML,
-        reply_markup=InlineKeyboardMarkup(buttons)
+        reply_markup=get_buttons("top")
     )
 
-@Client.on_callback_query(filters.regex("^top$"))
-async def top_callback(client, callback_query):
-    await asyncio.sleep(1)
-    cursor = user_collection.find({}, {"_id": 0, "id": 1, "first_name": 1, "characters": 1})
-    leaderboard_data = await cursor.to_list(length=None)
-    leaderboard_data.sort(key=lambda x: len(x.get('characters', [])), reverse=True)
-    leaderboard_data = leaderboard_data[:10]
 
-    caption = "<b>ᴛᴏᴘ 10 ᴜsᴇʀs ᴡɪᴛʜ ᴍᴏsᴛ ᴄʜᴀʀᴀᴄᴛᴇʀs</b>\n\n"
-    for i, user in enumerate(leaderboard_data, start=1):
-        user_id = user.get('id', 'Unknown')
-        first_name = html.escape(user.get('first_name', 'Unknown'))[:15] + '...'
-        character_count = len(user.get('characters', []))
-        caption += f'{i}. <a href="tg://user?id={user_id}"><b>{first_name}</b></a> ➾ <b>{character_count}</b>\n'
+# ---------- BUTTON HANDLERS ----------
+@app.on_callback_query(filters.regex("^(top|top_group|mtop)$"))
+async def leaderboard_buttons(client, query):
+    btn = query.data
 
-    await update_caption(callback_query, caption, "top")
+    if btn == "top":
+        cursor = user_collection.find({}, {"_id":0,"id":1,"first_name":1,"characters":1})
+        data = await cursor.to_list(length=None)
+        data.sort(key=lambda x: len(x.get("characters", [])), reverse=True)
+        caption = build_user_leaderboard(data[:10])
 
-@Client.on_callback_query(filters.regex("^top_group$"))
-async def top_group_callback(client, callback_query):
-    await asyncio.sleep(1)
-    cursor = top_global_groups_collection.aggregate([
-        {"$project": {"group_name": 1, "count": 1}},
-        {"$sort": {"count": -1}},
-        {"$limit": 10}
-    ])
-    leaderboard_data = await cursor.to_list(length=10)
-    
-    caption = "<b>ᴛᴏᴘ 10 ɢʀᴏᴜᴘs ᴡʜᴏ ɢᴜssᴇᴅ ᴍᴏsᴛ ᴄʜᴀʀᴀᴄᴛᴇʀs</b>\n\n"
-    for i, group in enumerate(leaderboard_data, start=1):
-        group_name = html.escape(group.get('group_name', 'Unknown'))[:15] + '...'
-        count = group['count']
-        caption += f'{i}. <b>{group_name}</b> ➾ <b>{count}</b>\n'
+    elif btn == "top_group":
+        cursor = top_global_groups_collection.aggregate([
+            {"$project": {"group_name":1, "count":1}},
+            {"$sort":{"count":-1}},
+            {"$limit":10}
+        ])
+        data = await cursor.to_list(length=10)
+        caption = build_group_leaderboard(data)
 
-    await update_caption(callback_query, caption, "top_group")
+    else:  # richest
+        cursor = user_collection.find({}, {"_id":0,"id":1,"first_name":1,"balance":1})
+        data = await cursor.to_list(length=None)
+        data.sort(key=lambda x: x.get("balance", 0), reverse=True)
+        caption = build_coin_leaderboard(data[:10])
 
-@Client.on_callback_query(filters.regex("^mtop$"))
-async def mtop_callback(client, callback_query):
-    await asyncio.sleep(1)
-    top_users = await user_collection.find().sort("balance", -1).limit(10).to_list(length=10)
+    await query.message.edit_caption(
+        caption,
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=get_buttons(btn)
+    )
+    await query.answer()
 
-    caption = "<b>ᴍᴛᴏᴘ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ</b>\n\n🏆 Tᴏᴘ 10 Uꜱᴇʀs ʙʏ Cᴏɪɴs:\n\n"
-    for rank, user in enumerate(top_users, start=1):
-        user_id = user.get("id", "Unknown")
-        first_name = user.get("first_name", "Unknown")
-        coins = user.get("balance", 0)
-        caption += f"{rank}. <a href='tg://user?id={user_id}'><b>{first_name}</b></a>: 💸 {coins} Coins\n"
 
-    await update_caption(callback_query, caption, "mtop")
+# ---------- /profile ----------
+@app.on_message(filters.command("profile"))
+async def profile_cmd(client, message):
+    target = None
+    if message.reply_to_message:
+        target = message.reply_to_message.from_user
+    else:
+        parts = message.text.split()
+        if len(parts) >= 2:
+            try:
+                t = parts[1]
+                if t.startswith("@"):
+                    target = await client.get_users(t)
+                else:
+                    target = await client.get_users(int(t))
+            except:
+                return await message.reply_text("Invalid user.")
 
-@Client.on_callback_query(filters.regex("^tokens$"))
-async def tokens_callback(client, callback_query):
-    await asyncio.sleep(1)
-    top_users = await user_collection.find().sort("tokens", -1).limit(10).to_list(length=10)
+    if not target:
+        target = message.from_user
 
-    caption = "<b>ᴛᴏᴋᴇɴs ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ</b>\n\n🏆 Tᴏᴘ 10 Uꜱᴇʀs ʙʏ Tokens:\n\n"
-    for rank, user in enumerate(top_users, start=1):
-        user_id = user.get("id", "Unknown")
-        first_name = user.get("first_name", "Unknown")
-        tokens = user.get("tokens", 0)
-        caption += f"{rank}. <a href='tg://user?id={user_id}'><b>{first_name}</b></a>: 🪙 {tokens} Tokens\n"
+    uid = target.id
+    user_doc = await user_collection.find_one({"id": uid})
+    if not user_doc:
+        return await message.reply_text("User not found in DB.")
 
-    await update_caption(callback_query, caption, "tokens")
+    cursor = user_collection.find({}, {"_id":0,"id":1,"characters":1})
+    all_users = await cursor.to_list(length=None)
+    all_users.sort(key=lambda x: len(x.get("characters", [])), reverse=True)
+
+    total_users = len(all_users)
+    rank = next((i for i, u in enumerate(all_users, start=1) if u["id"] == uid), 0)
+
+    badge_emoji, badge_label = get_badge(rank, total_users)
+
+    chars = len(user_doc.get("characters", []))
+    balance = user_doc.get("balance", 0)
+
+    caption = (
+        f"<b>{html.escape(target.first_name)}</b> {badge_emoji}\n"
+        f"{badge_label}\n\n"
+        f"🧾 Characters: <b>{chars}</b>\n"
+        f"💰 Balance: <b>{balance}</b>\n"
+        f"🏅 Rank: <b>#{rank} / {total_users}</b>"
+    )
+
+    try:
+        photos = await client.get_profile_photos(uid, limit=1)
+        if photos.total_count > 0:
+            return await message.reply_photo(
+                photos.photos[0].file_id,
+                caption=caption,
+                parse_mode=enums.ParseMode.HTML
+            )
+    except:
+        pass
+
+    await message.reply_text(caption, parse_mode=enums.ParseMode.HTML)
