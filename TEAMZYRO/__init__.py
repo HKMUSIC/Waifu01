@@ -29,11 +29,11 @@ api_id = os.getenv("API_ID", "23343216")
 api_hash = os.getenv("API_HASH", "1d66f21cd828dc22b80e3750719bd94a")
 TOKEN = os.getenv("TOKEN", "")
 GLOG = os.getenv("GLOG", "gojo_waifu")
-CHARA_CHANNEL_ID = os.getenv("CHARA_CHANNEL_ID", "Team_ll_MAFIA")
-SUPPORT_CHAT_ID = os.getenv("SUPPORT_CHAT_ID", "-1002706959174")
+CHARA_CHANNEL_ID = os.getenv("CHARA_CHANNEL_ID", "gojo_waifu")
+SUPPORT_CHAT_ID = os.getenv("SUPPORT_CHAT_ID", "-1002792716047")
 mongo_url = os.getenv("MONGO_URL", "mongodb+srv://Gojowaifu2:Gojowaifu2@cluster0.uvox90s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
-MUSJ_JOIN = os.getenv("MUSJ_JOIN", "https://t.me/+KmMKQphxhjE2MmVl")
+MUSJ_JOIN = os.getenv("MUSJ_JOIN", "https://t.me/+8KU5ZDxvZyw0N2U1")
 
 # Modified to support both image and video URLs
 START_MEDIA = os.getenv("START_MEDIA", "https://files.catbox.moe/3kd6oq.jpg,https://files.catbox.moe/nkg2ly.jpg,https://files.catbox.moe/0zvwpt.jpg,https://files.catbox.moe/z7d8i6.jpg").split(',')
@@ -45,10 +45,10 @@ PHOTO_URL = [
 
 STATS_IMG = ["https://files.catbox.moe/0zvwpt.jpg"]
 
-SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "https://t.me/+J1uhYeGU0rFhMWZl")
-UPDATE_CHAT = os.getenv("UPDATE_CHAT", "https://t.me/Team_ll_MAFIA")
+SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "https://t.me/GOJO_NOBITA_II")
+UPDATE_CHAT = os.getenv("UPDATE_CHAT", "https://t.me/GOJO_SUPPORT_GROUP_II")
 SUDO = list(map(int, os.getenv("SUDO", "7553434931").split(',')))
-OWNER_ID = int(os.getenv("OWNER_ID", "6667379671"))
+OWNER_ID = int(os.getenv("OWNER_ID", "7553434931"))
 
 # --------------------- TELEGRAM BOT CONFIGURATION -----------------------
 command_filter = f.create(lambda _, __, message: message.text and message.text.startswith("/"))
@@ -66,6 +66,14 @@ top_global_groups_collection = db['gaming_global_groups']
 pm_users = db['gaming_pm_users']
 destination_collection = db['gamimg_user_collection']
 destination_char = db['gaming_anime_characters']
+questions_collection = db["questions"]
+group_collection = db["groups"]
+waifu_collection = db["waifus"]
+mines_collection = db["mines_games"]
+multi_collection = db["multi_mines"]
+txn_collection = db["transactions"]
+
+
 
 # -------------------------- GLOBAL VARIABLES ----------------------------
 app = ZYRO
