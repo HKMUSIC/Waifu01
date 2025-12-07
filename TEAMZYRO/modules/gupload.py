@@ -1,7 +1,7 @@
 import httpx
 from pyrogram import filters
 from TEAMZYRO import (
-    ZYRO,
+    app,
     CHARA_CHANNEL_ID,
     collection,
     rarity_map,
@@ -45,8 +45,9 @@ async def fetch_waifu_image(query):
         return None
 
 
+
 # ---------------- MAIN COMMAND ----------------
-@ZYRO.on_message(filters.command("gupload"))
+@app.on_message(filters.command("gupload"))
 @require_power("add_character")
 async def auto_upload(_, message):
     args = message.text.split()
@@ -56,7 +57,6 @@ async def auto_upload(_, message):
             "Use: `/gupload character-name anime-name rarity-number`"
         )
 
-    # Inputs
     character_name = args[1].replace("-", " ").title()
     anime_name = args[2].replace("-", " ").title()
 
@@ -74,13 +74,11 @@ async def auto_upload(_, message):
 
     query = character_name.lower().replace(" ", "%20")
 
-    # Get Image
     image_url = await fetch_waifu_image(query)
 
     if not image_url:
         return await waiting.edit("❌ No HD image found.")
 
-    # Make ID
     waifu_id = await find_available_id()
 
     character = {
@@ -92,7 +90,6 @@ async def auto_upload(_, message):
         "img_url": image_url,
     }
 
-    # Save In DB
     await collection.insert_one(character)
 
     caption = (
@@ -103,17 +100,14 @@ async def auto_upload(_, message):
         f"Added By: [{message.from_user.first_name}](tg://user?id={message.from_user.id})"
     )
 
-    # Send Photo Safely
     try:
-        await ZYRO.send_photo(
+        await app.send_photo(
             CHARA_CHANNEL_ID,
             photo=image_url,
             caption=caption
         )
     except:
-        await waiting.edit(
-            "⚠️ Image could not be sent to channel.\nBut character saved."
-        )
+        await waiting.edit("⚠️ Image could not be sent to channel.\nBut character saved.")
         return
 
     await waiting.delete()
