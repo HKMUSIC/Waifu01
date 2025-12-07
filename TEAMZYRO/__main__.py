@@ -43,7 +43,7 @@ async def start_all():
         traceback.print_exc()
 
     # 3) run send_start_message safely (handles sync/async)
-    await safe_call(send_start_message)
+    await safe_call send_start_message()
 
     # 4) initialize & start python-telegram-bot (application) in same loop
     try:
