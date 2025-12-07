@@ -1,68 +1,63 @@
-# TEAMZYRO/__main__.py
-from TEAMZYRO import *
-import importlib
-import logging
-from TEAMZYRO.modules import ALL_MODULES
+# TEAMZYRO/main.py
 import asyncio
+import importlib
+from TEAMZYRO import *
+from TEAMZYRO.modules import ALL_MODULES
 import inspect
 import traceback
 
-# ---------- safe wrapper for startup message ----------
-async def safe_call(func, *args, **kwargs):
-    """
-    Call func which may be sync or async. Never raise (logs exceptions).
-    """
+
+async def safe_call(func):
+    """Runs send_start_message safely whether async or sync."""
     try:
-        result = func(*args, **kwargs)
+        result = func()
         if inspect.isawaitable(result):
-            try:
-                await result
-            except Exception as e:
-                print("[Startup - awaited func error]", e)
-                traceback.print_exc()
-        else:
-            # sync call returned fine
-            pass
-    except Exception as e:
-        print("[Startup - call raised]", e)
+            await result
+    except Exception:
+        print("\n--- send_start_message ERROR ---")
         traceback.print_exc()
 
-# ---------- main startup ----------
-async def start_all():
-    # 1) load modules
+
+async def start_bot():
+    # ---------------- Load all modules ----------------
     for module_name in ALL_MODULES:
-        importlib.import_module("TEAMZYRO.modules." + module_name)
+        importlib.import_module(f"TEAMZYRO.modules.{module_name}")
+
     LOGGER("TEAMZYRO.modules").info("𝐀𝐥𝐥 𝐅𝐞𝐚𝐭𝐮𝐫𝐞𝐬 𝐋𝐨𝐚𝐝𝐞𝐝 𝐁𝐚𝐛𝐲🥳...")
 
-    # 2) start pyrogram (ZYRO)
+    # ---------------- Start Pyrogram ----------------
     try:
         await ZYRO.start()
-        LOGGER("TEAMZYRO").info("ZYRO (Pyrogram) started.")
+        LOGGER("TEAMZYRO").info("Pyrogram (ZYRO) started.")
     except Exception as e:
-        LOGGER("TEAMZYRO").error(f"Failed to start ZYRO: {e}")
+        LOGGER("TEAMZYRO").error(f"Pyrogram start failed: {e}")
         traceback.print_exc()
 
-    # 3) run send_start_message safely (handles sync/async)
-    await safe_call send_start_message()
-
-    # 4) initialize & start python-telegram-bot (application) in same loop
+    # ---------------- Start PTB ----------------
     try:
         await application.initialize()
         await application.start()
-        LOGGER("TEAMZYRO").info("PTB application initialized & started.")
-        # start polling (async)
+        LOGGER("TEAMZYRO").info("PTB Application started.")
+
         await application.updater.start_polling(drop_pending_updates=True)
-        LOGGER("TEAMZYRO").info("PTB polling started.")
+        LOGGER("TEAMZYRO").info("PTB Polling started.")
     except Exception as e:
-        LOGGER("TEAMZYRO").error(f"Failed to start PTB application: {e}")
+        LOGGER("TEAMZYRO").error(f"PTB start failed: {e}")
         traceback.print_exc()
 
-    # 5) keep the process alive
+    # ---------------- send_start_message (safe) ----------------
+    await safe_call(send_start_message)
+
+    LOGGER("TEAMZYRO").info(
+        "╔═════ஜ۩۞۩ஜ════╗\n  ☠︎︎MADE BY GOJOXNETWORK☠︎︎\n╚═════ஜ۩۞۩ஜ════╝"
+    )
+
+    # Keep running forever
     await asyncio.Event().wait()
 
 
 def main():
-    asyncio.run(start_all())
+    asyncio.run(start_bot())
 
 
 if __name__ == "__main__":
