@@ -27,48 +27,54 @@ async def find_available_id():
     return str(len(ids) + 1).zfill(2)
 
 
-# ---------------- HYBRID FETCH SYSTEM ----------------
+# ---------------- SAFE HYBRID FETCH SYSTEM ----------------
 async def fetch_waifu_image(query):
     query_clean = query.lower().replace(" ", "%20")
 
-    async with httpx.AsyncClient(timeout=15) as client:
+    # Each API tried with short timeout so bot never freezes
+    TIMEOUT = httpx.Timeout(2.0)
 
-        # 1️⃣ Try NekosAPI (character specific)
-        try:
-            url1 = f"https://nekosapi.com/api/v3/images/random?tags={query_clean}"
-            r1 = await client.get(url1)
-            data1 = r1.json()
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
 
-            if "items" in data1 and len(data1["items"]) > 0:
-                return data1["items"][0]["image_url"]
-        except:
-            pass
+            # 1️⃣ NekosAPI
+            try:
+                r1 = await client.get(
+                    f"https://nekosapi.com/api/v3/images/random?tags={query_clean}"
+                )
+                d1 = r1.json()
 
-        # 2️⃣ Try Nekos.best (random HD)
-        try:
-            url2 = f"https://nekos.best/api/v2/waifu"
-            r2 = await client.get(url2)
-            data2 = r2.json()
+                if "items" in d1 and d1["items"]:
+                    return d1["items"][0]["image_url"]
+            except:
+                pass
 
-            if "results" in data2 and len(data2["results"]) > 0:
-                return data2["results"][0]["url"]
-        except:
-            pass
+            # 2️⃣ Nekos.best
+            try:
+                r2 = await client.get("https://nekos.best/api/v2/waifu")
+                d2 = r2.json()
 
-        # 3️⃣ Try Waifu.im (backup)
-        try:
-            url3 = f"https://api.waifu.im/search?included_tags={query_clean}"
-            r3 = await client.get(url3)
-            data3 = r3.json()
+                if "results" in d2 and d2["results"]:
+                    return d2["results"][0]["url"]
+            except:
+                pass
 
-            if "images" in data3 and len(data3["images"]) > 0:
-                return data3["images"][0]["url"]
-        except:
-            pass
+            # 3️⃣ Waifu.im
+            try:
+                r3 = await client.get(
+                    f"https://api.waifu.im/search?included_tags={query_clean}"
+                )
+                d3 = r3.json()
 
-    # ❌ All failed
+                if "images" in d3 and d3["images"]:
+                    return d3["images"][0]["url"]
+            except:
+                pass
+
+    except:
+        return None
+
     return None
-
 
 # ---------------- MAIN COMMAND ----------------
 @app.on_message(filters.command("gupload"))
@@ -94,8 +100,8 @@ async def auto_upload(_, message):
 
     rarity_text = rarity_map[rarity_number]
 
-    waiting = await message.reply_text("⏳ Fetching HD image from waifu.im...")
-
+    waiting = await message.reply_text("⏳ Fetching HD image...")
+    
     query = character_name.lower().replace(" ", "%20")
 
     image_url = await fetch_waifu_image(query)
