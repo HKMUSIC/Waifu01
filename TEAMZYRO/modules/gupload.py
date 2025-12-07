@@ -8,16 +8,16 @@ from TEAMZYRO import (
     require_power
 )
 
-# ---------------- ID GENERATOR ----------------
+# ---------------- FIND NEXT AVAILABLE ID ----------------
 async def find_available_id():
-    cursor = collection.find().sort("id", 1)
+    cursor = collection.find({}, {"id": 1}).sort("id", 1)
     ids = []
+
     async for doc in cursor:
-        if "id" in doc:
-            try:
-                ids.append(int(doc["id"]))
-            except:
-                pass
+        try:
+            ids.append(int(doc["id"]))
+        except:
+            pass
 
     ids.sort()
     for i in range(1, len(ids) + 2):
@@ -27,61 +27,25 @@ async def find_available_id():
     return str(len(ids) + 1).zfill(2)
 
 
-# ---------------- SAFE HYBRID FETCH SYSTEM ----------------
+# ---------------- FETCH IMAGE FROM WAIFU.IM --------------
 async def fetch_waifu_image(query):
-    query_clean = query.lower().replace(" ", "%20")
-    TIMEOUT = httpx.Timeout(2.0)
+    url = f"https://api.waifu.im/search?included_tags={query}"
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(url)
+            data = r.json()
 
-        # 1️⃣ NekosAPI (HD models)
-        try:
-            r1 = await client.get(
-                f"https://nekosapi.com/api/v3/images/random?tags={query_clean}"
-            )
-            d1 = r1.json()
+            if not data.get("images"):
+                return None
 
-            if d1.get("items"):
-                return d1["items"][0]["image_url"]
-        except:
-            pass
+            return data["images"][0]["url"]
 
-        # 2️⃣ Waifu.pics (super fast + HD)
-        try:
-            r2 = await client.get(f"https://api.waifu.pics/sfw/{query_clean}")
-            d2 = r2.json()
-
-            if d2.get("url"):
-                return d2["url"]
-        except:
-            pass
-
-        # 3️⃣ Waifu.im (updated modern endpoint)
-        try:
-            r3 = await client.get(
-                f"https://api.waifu.im/search?included_tags={query_clean}"
-            )
-            d3 = r3.json()
-
-            if d3.get("images"):
-                return d3["images"][0]["url"]
-        except:
-            pass
-
-        # 4️⃣ Fallback: Nekos.best random HD
-        try:
-            r4 = await client.get("https://nekos.best/api/v2/waifu")
-            d4 = r4.json()
-
-            if d4.get("results"):
-                return d4["results"][0]["url"]
-        except:
-            pass
-
-    return None
+    except:
+        return None
 
 
-# ---------------- MAIN COMMAND ----------------
+# --------------------- MAIN COMMAND ----------------------
 @app.on_message(filters.command("gupload"))
 @require_power("add_character")
 async def auto_upload(_, message):
@@ -89,33 +53,36 @@ async def auto_upload(_, message):
 
     if len(args) != 4:
         return await message.reply_text(
-            "Use: `/gupload character-name anime-name rarity-number`"
+            "❗ Use:\n`/gupload character-name anime-name rarity-number`"
         )
 
     character_name = args[1].replace("-", " ").title()
     anime_name = args[2].replace("-", " ").title()
 
+    # rarity check
     try:
         rarity_number = int(args[3])
     except:
-        return await message.reply_text("Rarity must be a number.")
+        return await message.reply_text("❌ Rarity must be a number.")
 
     if rarity_number not in rarity_map:
-        return await message.reply_text("Invalid rarity number.")
+        return await message.reply_text("❌ Invalid rarity number.")
 
     rarity_text = rarity_map[rarity_number]
 
-    waiting = await message.reply_text("⏳ Fetching HD image...")
-    
-    query = character_name.lower().replace(" ", "%20")
+    # fetching image
+    waiting = await message.reply_text("⏳ Fetching HD image from waifu.im...")
 
+    query = character_name.lower().replace(" ", "%20")
     image_url = await fetch_waifu_image(query)
 
     if not image_url:
-        return await waiting.edit("❌ No HD image found.")
+        return await waiting.edit("❌ No HD image found for this character.")
 
+    # ID generate
     waifu_id = await find_available_id()
 
+    # save in DB
     character = {
         "name": character_name,
         "anime": anime_name,
@@ -127,12 +94,14 @@ async def auto_upload(_, message):
 
     await collection.insert_one(character)
 
+    # Send to channel
     caption = (
-        f"Character Name: {character_name}\n"
-        f"Anime: {anime_name}\n"
-        f"Rarity: {rarity_text}\n"
-        f"ID: {waifu_id}\n"
-        f"Added By: [{message.from_user.first_name}](tg://user?id={message.from_user.id})"
+        f"✨ **New Character Added!**\n\n"
+        f"**Name:** {character_name}\n"
+        f"**Anime:** {anime_name}\n"
+        f"**Rarity:** {rarity_text}\n"
+        f"**ID:** `{waifu_id}`\n"
+        f"**Added By:** [{message.from_user.first_name}](tg://user?id={message.from_user.id})"
     )
 
     try:
@@ -142,14 +111,14 @@ async def auto_upload(_, message):
             caption=caption
         )
     except:
-        await waiting.edit("⚠️ Image could not be sent to channel.\nBut character saved.")
+        await waiting.edit("⚠️ Character saved but image failed to send to channel.")
         return
 
     await waiting.delete()
 
     await message.reply_text(
-        f"✅ Character Added!\n"
+        f"✅ **Character Added Successfully!**\n"
         f"**Name:** {character_name}\n"
-        f"**Rarity:** {rarity_text}\n"
-        f"**ID:** {waifu_id}"
+        f"**ID:** `{waifu_id}`\n"
+        f"**Rarity:** {rarity_text}"
     )
