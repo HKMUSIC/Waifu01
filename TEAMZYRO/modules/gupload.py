@@ -29,28 +29,11 @@ async def find_available_id():
 
 # ---------------- FETCH IMAGE FROM WAIFU.IM --------------
 async def fetch_waifu_image(query):
-    # FIRST TRY — WAIFU.IM
-    url = "https://api.waifu.im/search"
-    payload = {
-        "included_tags": [query],
-        "is_nsfw": False
-    }
-
+    # NEKOS.BEST CHARACTER SEARCH — FAST & STABLE
     try:
+        api = f"https://nekos.best/api/v2/search?query={query}"
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(url, json=payload)
-            data = resp.json()
-
-            if data.get("images"):
-                return data["images"][0]["url"]
-    except:
-        pass
-
-    # SECOND TRY — NEKOS.BEST (CHARACTER SEARCH)
-    try:
-        nb_url = f"https://nekos.best/api/v2/search?query={query}"
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(nb_url)
+            resp = await client.get(api)
             data = resp.json()
 
             if data.get("results"):
@@ -58,9 +41,7 @@ async def fetch_waifu_image(query):
     except:
         pass
 
-    # FINAL FAIL
     return None
-
 
 # --------------------- MAIN COMMAND ----------------------
 @app.on_message(filters.command("gupload"))
