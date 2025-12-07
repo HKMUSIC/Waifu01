@@ -5,28 +5,34 @@ from TEAMZYRO.modules import ALL_MODULES
 import asyncio
 
 
+async def safe_send_start_message():
+    """Start message ko crash-free banata hai."""
+    try:
+        await send_start_message()
+    except Exception as e:
+        print(f"[Start Message Error] {e}")
+
+
 async def start_all():
-    # Load modules
+    # 1. Load all modules
     for module_name in ALL_MODULES:
         importlib.import_module("TEAMZYRO.modules." + module_name)
 
     LOGGER("TEAMZYRO.modules").info("𝐀𝐥𝐥 𝐅𝐞𝐚𝐭𝐮𝐫𝐞𝐬 𝐋𝐨𝐚𝐝𝐞𝐝 𝐁𝐚𝐛𝐲🥳...")
 
-    # Start Pyrogram safely
+    # 2. Start Pyrogram (no crash)
     await ZYRO.start()
 
-    # After pyrogram starts — send start message
-    try:
-        send_start_message()
-    except:
-        pass
+    # 3. Send start message safely
+    await safe_send_start_message()
 
-    # Start Telegram Bot polling (run blocking in thread)
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        None,
-        lambda: application.run_polling(drop_pending_updates=True)
-    )
+    # 4. Start python-telegram-bot safely (NO threading, NO executor)
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(drop_pending_updates=True)
+
+    # 5. Keep bot running forever
+    await asyncio.Event().wait()
 
 
 def main():
