@@ -27,23 +27,47 @@ async def find_available_id():
     return str(len(ids) + 1).zfill(2)
 
 
-# ---------------- FETCH IMAGE ----------------
+# ---------------- HYBRID FETCH SYSTEM ----------------
 async def fetch_waifu_image(query):
-    url = f"https://api.waifu.im/search?included_tags={query}"
+    query_clean = query.lower().replace(" ", "%20")
 
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(url)
-            data = r.json()
+    async with httpx.AsyncClient(timeout=15) as client:
 
-            if "images" not in data or not data["images"]:
-                return None
+        # 1️⃣ Try NekosAPI (character specific)
+        try:
+            url1 = f"https://nekosapi.com/api/v3/images/random?tags={query_clean}"
+            r1 = await client.get(url1)
+            data1 = r1.json()
 
-            return data["images"][0]["url"]
+            if "items" in data1 and len(data1["items"]) > 0:
+                return data1["items"][0]["image_url"]
+        except:
+            pass
 
-    except:
-        return None
+        # 2️⃣ Try Nekos.best (random HD)
+        try:
+            url2 = f"https://nekos.best/api/v2/waifu"
+            r2 = await client.get(url2)
+            data2 = r2.json()
 
+            if "results" in data2 and len(data2["results"]) > 0:
+                return data2["results"][0]["url"]
+        except:
+            pass
+
+        # 3️⃣ Try Waifu.im (backup)
+        try:
+            url3 = f"https://api.waifu.im/search?included_tags={query_clean}"
+            r3 = await client.get(url3)
+            data3 = r3.json()
+
+            if "images" in data3 and len(data3["images"]) > 0:
+                return data3["images"][0]["url"]
+        except:
+            pass
+
+    # ❌ All failed
+    return None
 
 
 # ---------------- MAIN COMMAND ----------------
