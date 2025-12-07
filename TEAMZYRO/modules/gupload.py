@@ -29,20 +29,37 @@ async def find_available_id():
 
 # ---------------- FETCH IMAGE FROM WAIFU.IM --------------
 async def fetch_waifu_image(query):
-    url = f"https://api.waifu.im/search?included_tags={query}"
+    # FIRST TRY — WAIFU.IM
+    url = "https://api.waifu.im/search"
+    payload = {
+        "included_tags": [query],
+        "is_nsfw": False
+    }
 
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(url)
-            data = r.json()
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(url, json=payload)
+            data = resp.json()
 
-            if not data.get("images"):
-                return None
-
-            return data["images"][0]["url"]
-
+            if data.get("images"):
+                return data["images"][0]["url"]
     except:
-        return None
+        pass
+
+    # SECOND TRY — NEKOS.BEST (CHARACTER SEARCH)
+    try:
+        nb_url = f"https://nekos.best/api/v2/search?query={query}"
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(nb_url)
+            data = resp.json()
+
+            if data.get("results"):
+                return data["results"][0]["url"]
+    except:
+        pass
+
+    # FINAL FAIL
+    return None
 
 
 # --------------------- MAIN COMMAND ----------------------
