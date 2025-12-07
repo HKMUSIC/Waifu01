@@ -10,7 +10,8 @@ from TEAMZYRO import (
     require_power
 )
 
-# ----- Find next available ID -----
+
+# ------- Find next available ID -------
 async def find_available_id():
     cursor = collection.find().sort("id", 1)
     ids = []
@@ -27,14 +28,22 @@ async def find_available_id():
     return str(len(ids) + 1).zfill(2)
 
 
-# ----- Fetch HD image from waifu.im -----
+# ------- Fetch waifu.im image safely -------
 async def fetch_waifu_image(query):
     url = f"https://api.waifu.im/search?included_tags={query}"
 
-    async with httpx.AsyncClient() as client:
-        r = await client.get(url, timeout=30)
-        data = r.json()
-        return data["images"][0]["url"]
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(url)
+            data = r.json()
+
+            if "images" not in data or len(data["images"]) == 0:
+                return None
+
+            return data["images"][0]["url"]
+
+    except Exception as e:
+        return None
 
 
 @ZYRO.on_message(filters.command("gupload"))
@@ -47,7 +56,7 @@ async def auto_upload(client, message):
             "Use: `/gupload character-name anime-name rarity-number`"
         )
 
-    # ----- Parse inputs -----
+    # Inputs
     character_name = args[1].replace("-", " ").title()
     anime_name = args[2].replace("-", " ").title()
 
@@ -61,22 +70,19 @@ async def auto_upload(client, message):
 
     rarity_text = rarity_map[rarity_number]
 
-    waiting = await message.reply_text("Fetching HD image from waifu.im...")
+    waiting = await message.reply_text("⏳ Fetching HD image from waifu.im...")
 
-    # ---- Create query keyword for image search ----
     query = character_name.lower().replace(" ", "%20")
 
-    try:
-        # Fetch HD image
-        image_url = await fetch_waifu_image(query)
-    except:
-        await waiting.edit("❌ No image found on waifu.im")
-        return
+    # Fetch HD image
+    image_url = await fetch_waifu_image(query)
 
-    # Generate ID
+    if not image_url:
+        return await waiting.edit("❌ No HD image found for this character.")
+
+    # Create ID
     waifu_id = await find_available_id()
 
-    # Create DB object
     character = {
         "name": character_name,
         "anime": anime_name,
@@ -86,10 +92,9 @@ async def auto_upload(client, message):
         "img_url": image_url,
     }
 
-    # Save to MongoDB
+    # Save to DB
     await collection.insert_one(character)
 
-    # Send to channel
     caption = (
         f"Character Name: {character_name}\n"
         f"Anime: {anime_name}\n"
@@ -98,18 +103,22 @@ async def auto_upload(client, message):
         f"Added by: [{message.from_user.first_name}](tg://user?id={message.from_user.id})"
     )
 
-    await client.send_photo(
-        CHARA_CHANNEL_ID,
-        image_url,
-        caption=caption,
-    )
+    # ---- Safe image send (NO CRASH) ----
+    try:
+        await client.send_photo(
+            CHARA_CHANNEL_ID,
+            photo=image_url,
+            caption=caption
+        )
+    except Exception as e:
+        await waiting.edit("⚠️ Image could not be sent to channel.\nBut character is saved in DB.")
+        return
 
     await waiting.delete()
 
-    # Final confirmation
     await message.reply_text(
         f"✅ **Character Added Successfully!**\n\n"
         f"**Name:** {character_name}\n"
         f"**Rarity:** {rarity_text}\n"
         f"**ID:** {waifu_id}"
-  )
+        )
