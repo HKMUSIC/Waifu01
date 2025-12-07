@@ -30,51 +30,56 @@ async def find_available_id():
 # ---------------- SAFE HYBRID FETCH SYSTEM ----------------
 async def fetch_waifu_image(query):
     query_clean = query.lower().replace(" ", "%20")
-
-    # Each API tried with short timeout so bot never freezes
     TIMEOUT = httpx.Timeout(2.0)
 
-    try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
 
-            # 1️⃣ NekosAPI
-            try:
-                r1 = await client.get(
-                    f"https://nekosapi.com/api/v3/images/random?tags={query_clean}"
-                )
-                d1 = r1.json()
+        # 1️⃣ NekosAPI (HD models)
+        try:
+            r1 = await client.get(
+                f"https://nekosapi.com/api/v3/images/random?tags={query_clean}"
+            )
+            d1 = r1.json()
 
-                if "items" in d1 and d1["items"]:
-                    return d1["items"][0]["image_url"]
-            except:
-                pass
+            if d1.get("items"):
+                return d1["items"][0]["image_url"]
+        except:
+            pass
 
-            # 2️⃣ Nekos.best
-            try:
-                r2 = await client.get("https://nekos.best/api/v2/waifu")
-                d2 = r2.json()
+        # 2️⃣ Waifu.pics (super fast + HD)
+        try:
+            r2 = await client.get(f"https://api.waifu.pics/sfw/{query_clean}")
+            d2 = r2.json()
 
-                if "results" in d2 and d2["results"]:
-                    return d2["results"][0]["url"]
-            except:
-                pass
+            if d2.get("url"):
+                return d2["url"]
+        except:
+            pass
 
-            # 3️⃣ Waifu.im
-            try:
-                r3 = await client.get(
-                    f"https://api.waifu.im/search?included_tags={query_clean}"
-                )
-                d3 = r3.json()
+        # 3️⃣ Waifu.im (updated modern endpoint)
+        try:
+            r3 = await client.get(
+                f"https://api.waifu.im/search?included_tags={query_clean}"
+            )
+            d3 = r3.json()
 
-                if "images" in d3 and d3["images"]:
-                    return d3["images"][0]["url"]
-            except:
-                pass
+            if d3.get("images"):
+                return d3["images"][0]["url"]
+        except:
+            pass
 
-    except:
-        return None
+        # 4️⃣ Fallback: Nekos.best random HD
+        try:
+            r4 = await client.get("https://nekos.best/api/v2/waifu")
+            d4 = r4.json()
+
+            if d4.get("results"):
+                return d4["results"][0]["url"]
+        except:
+            pass
 
     return None
+
 
 # ---------------- MAIN COMMAND ----------------
 @app.on_message(filters.command("gupload"))
