@@ -28,31 +28,40 @@ async def find_available_id():
 
 
 # ---------------- FETCH IMAGE FROM WAIFU.IM --------------
-async def fetch_character_image(character_name):
-    url = "https://graphql.anilist.co"
-
-    query = """
-    query ($name: String) {
-      Character(search: $name) {
-        image {
-          large
-        }
-      }
+async def fetch_waifu_image(query):
+    # FIRST TRY — WAIFU.IM
+    url = "https://api.waifu.im/search"
+    payload = {
+        "included_tags": [query],
+        "is_nsfw": False
     }
-    """
 
-    variables = {"name": character_name}
-
-    async with httpx.AsyncClient(timeout=10) as client:
-        try:
-            resp = await client.post(url, json={"query": query, "variables": variables})
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(url, json=payload)
             data = resp.json()
 
-            img = data["data"]["Character"]["image"]["large"]
+            if data.get("images"):
+                return data["images"][0]["url"]
+    except:
+        pass
 
-            return img
-        except:
-            return None
+    # SECOND TRY — NEKOS.BEST (CHARACTER SEARCH)
+    try:
+        nb_url = f"https://nekos.best/api/v2/search?query={query}"
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(nb_url)
+            data = resp.json()
+
+            if data.get("results"):
+                return data["results"][0]["url"]
+    except:
+        pass
+
+    # FINAL FAIL
+    return None
+
+
 
 
 # --------------------- MAIN COMMAND ----------------------
