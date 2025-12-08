@@ -1,39 +1,59 @@
-from TEAMZYRO import *
-import importlib
-import logging
 import asyncio
+import importlib
+from TEAMZYRO import ZYRO, application, LOGGER
 from TEAMZYRO.modules import ALL_MODULES
 
 
+OWNER_ID = 7553434931
+LOG_CHAT = -1002792716047
+
+
+async def send_start_message():
+    """
+    Sends start messages AFTER both bots have started.
+    """
+    try:
+        await ZYRO.send_message(
+            OWNER_ID,
+            "✅ **Bot Started Successfully!**\nAll systems are running smoothly."
+        )
+
+        await ZYRO.send_message(
+            LOG_CHAT,
+            "🚀 **TEAMZYRO Bot Started!**\nAll modules loaded without errors."
+        )
+
+        LOGGER("TEAMZYRO").info("Start messages sent successfully.")
+
+    except Exception as e:
+        LOGGER("TEAMZYRO").error(f"Error in send_start_message: {e}")
+
+
 async def start_all():
+    """
+    Loads modules, starts Pyrogram & PTB in async-safe way.
+    """
+
     # Load all modules
     for module_name in ALL_MODULES:
         importlib.import_module("TEAMZYRO.modules." + module_name)
 
-    LOGGER("TEAMZYRO.modules").info("𝐀𝐥𝐥 𝐅𝐞𝐚𝐭𝐮𝐫𝐞𝐬 𝐋𝐨𝐚𝐝𝐞𝐝 🥳")
+    LOGGER("TEAMZYRO.modules").info("🔥 All Features Loaded Successfully!")
 
-    # Start Pyrogram first
+    # Start Pyrogram bot
     await ZYRO.start()
-    LOGGER("TEAMZYRO").info("Pyrogram started ✔")
 
-    # ------- PTB 20+ Async Mode -------
-    await application.initialize()   # NO LOOP START/STOP
-    await application.start()        # Safe start
-    await application.updater.start_polling()  # Safe polling WITHOUT touching event-loop
-    LOGGER("TEAMZYRO").info("PTB polling started ✔")
+    # Start PTB (async safe)
+    asyncio.create_task(application.run_polling(drop_pending_updates=True))
 
-    # Start message
-    try:
-        await send_start_message()
-    except Exception as e:
-        LOGGER("TEAMZYRO").warning(f"Start message error: {e}")
+    # Send start messages
+    await send_start_message()
 
     LOGGER("TEAMZYRO").info(
-        "╔═════ஜ۩۞۩ஜ════╗\n  ☠︎︎MADE BY GOJOXNETWORK☠︎︎\n╚═════ஜ۩۞۩ஜ════╝"
+        "╔═════ஜ۩۞۩ஜ════╗\n"
+        "  ☠︎︎ MADE BY GOJOXNETWORK ☠︎︎\n"
+        "╚═════ஜ۩۞۩ஜ════╝"
     )
-
-    # Keep bot alive
-    await asyncio.Event().wait()
 
 
 def main():
