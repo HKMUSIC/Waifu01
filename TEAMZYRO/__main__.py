@@ -12,14 +12,27 @@ async def start_all():
 
     LOGGER("TEAMZYRO.modules").info("𝐀𝐥𝐥 𝐅𝐞𝐚𝐭𝐮𝐫𝐞𝐬 𝐋𝐨𝐚𝐝𝐞𝐝 🥳")
 
-    await ZYRO.start()  # Pyrogram async start
+    # Start Pyrogram
+    await ZYRO.start()
+    LOGGER("TEAMZYRO").info("Pyrogram started ✔")
 
-    asyncio.create_task(application.run_polling(drop_pending_updates=True))
+    # Start PTB in pure async mode (NO run_polling)
+    await application.initialize()
+    await application.start()
+    LOGGER("TEAMZYRO").info("PTB started ✔")
 
-    await send_start_message()   # PROPER await
+    # process updates forever
+    asyncio.create_task(application.process_updates())
+
+    # Send start message
+    await send_start_message()
+
     LOGGER("TEAMZYRO").info(
         "╔═════ஜ۩۞۩ஜ════╗\n  ☠︎︎MADE BY GOJOXNETWORK☠︎︎\n╚═════ஜ۩۞۩ஜ════╝"
     )
+
+    # Keep process alive forever
+    await asyncio.Event().wait()
 
 
 def main():
