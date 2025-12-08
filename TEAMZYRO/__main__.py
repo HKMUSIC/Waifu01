@@ -1,8 +1,8 @@
-import asyncio
-import importlib
 from TEAMZYRO import *
-from TEAMZYRO.modules import ALL_MODULES
+import importlib
 import logging
+import asyncio
+from TEAMZYRO.modules import ALL_MODULES
 
 
 async def start_all():
@@ -12,23 +12,14 @@ async def start_all():
 
     LOGGER("TEAMZYRO.modules").info("𝐀𝐥𝐥 𝐅𝐞𝐚𝐭𝐮𝐫𝐞𝐬 𝐋𝐨𝐚𝐝𝐞𝐝 🥳")
 
-    # Start Pyrogram
-    await ZYRO.start()
+    await ZYRO.start()  # Pyrogram async start
 
-    # Start python-telegram-bot in async mode
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling(drop_pending_updates=True)
+    asyncio.create_task(application.run_polling(drop_pending_updates=True))
 
-    # Send start message
-    await send_start_message()
-
+    await send_start_message()   # PROPER await
     LOGGER("TEAMZYRO").info(
         "╔═════ஜ۩۞۩ஜ════╗\n  ☠︎︎MADE BY GOJOXNETWORK☠︎︎\n╚═════ஜ۩۞۩ஜ════╝"
     )
-
-    # Keep the bot running forever
-    await asyncio.Event().wait()
 
 
 def main():
