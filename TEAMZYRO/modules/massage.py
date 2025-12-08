@@ -6,8 +6,11 @@ import time
 
 async def message_counter(update: Update, context: CallbackContext) -> None:
     # ❗ BLOCK ALL UPDATES WITHOUT A MESSAGE
-if not update.message or not update.effective_user:
-    return
+def handle_massage(update, context):
+    if not update.message or not 
+update.effective_user:
+        return
+        
     chat_id = str(update.effective_chat.id)
     user_id = update.effective_user.id
     current_time = time.time()
